@@ -2,6 +2,7 @@ from typing import Tuple
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+import matplotlib.tri as tri
 import numpy as np
 
 
@@ -121,4 +122,84 @@ test_color = [
     [[0, 0, 255], [255, 0, 255], [0, 255, 255]],
 ]
 axs_array[4].imshow(test_color)
+
+
+axs_stat = fig_stat.subplots(ncols=1, nrows=5)
+
+stat_data = [5, 5, 5, 5, 5, 4, 4, 4, 4, 2, 2, 2, 1, 1]
+
+axs_stat[0].hist(stat_data)
+axs_stat[0].set_title("hist")
+x = np.arange(0.1, 4, 0.5)
+y = np.exp(-x)
+
+# example error bar values that vary with x-position
+error = 0.1 + 0.2 * x
+
+
+axs_stat[1].errorbar(x, y, yerr=error, fmt="-o")
+axs_stat[1].set_title("errorbar")
+
+size = 100000
+x = np.random.normal(size=size)
+y = np.random.normal(size=size)
+axs_stat[2].hist2d(x=x, y=y, bins=(50, 50))
+axs_stat[2].set_title("hist2d")
+
+x = [25, 40, 10, 15, 10]
+explode = [
+    0,
+] * len(x)
+
+explode[1] = 0.2
+
+axs_stat[3].pie(
+    x=x,
+    explode=explode,
+    autopct="%1.1f%%",
+)
+axs_stat[3].set_title("pie")
+
+spread = np.random.rand(50) * 100
+center = np.ones(25) * 50
+flier_high = np.random.rand(10) * 100 + 100
+flier_low = np.random.rand(10) * -100
+data = np.concatenate((spread, center, flier_high, flier_low))
+axs_stat[4].boxplot(data)
+axs_stat[4].set_title("boxplot")
+
+
+axs_irreg = fig_irreg.subplots(ncols=1, nrows=2)
+
+n_angles = 48
+n_radii = 8
+min_radius = 0.25
+radii = np.linspace(min_radius, 0.95, n_radii)
+
+angles = np.linspace(0, 2 * np.pi, n_angles, endpoint=False)
+angles = np.repeat(angles[..., np.newaxis], n_radii, axis=1)
+angles[:, 1::2] += np.pi / n_angles
+
+x = (radii * np.cos(angles)).flatten()
+y = (radii * np.sin(angles)).flatten()
+z = (np.cos(radii) * np.cos(3 * angles)).flatten()
+
+# Create the Triangulation; no triangles so Delaunay triangulation created.
+triang = tri.Triangulation(x, y)
+
+# Mask off unwanted triangles.
+triang.set_mask(
+    np.hypot(x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1))
+    < min_radius
+)
+axs_irreg[0].set_aspect("equal")
+tcf = axs_irreg[0].tricontourf(triang, z)
+fig_irreg.colorbar(tcf, ax=axs_irreg[0])
+axs_irreg[0].tricontour(triang, z, colors="k")
+axs_irreg[0].set_title("tricounter")
+
+axs_irreg[1].set_aspect("equal")
+tpc = axs_irreg[1].tripcolor(triang, z, shading="flat")
+fig_irreg.colorbar(tpc, ax=axs_irreg[1])
+axs_irreg[1].set_title("tripcolor")
 plt.show()
